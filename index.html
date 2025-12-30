@@ -5,61 +5,88 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>2026 Dream Splendor - 萌趣盛典</title>
     <style>
-        /* CSS 样式 */
+        /* CSS 样式：梦幻风格与 UI 布局 */
         body {
             margin: 0; overflow: hidden;
             background: radial-gradient(circle at center, #ffe6f2 0%, #e6f7ff 60%, #b3e0ff 100%);
             font-family: 'Segoe UI', sans-serif; color: #4a5d7e;
         }
+
         #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-        
-        /* UI 层 */
+
+        /* UI Overlay */
         #ui-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
             pointer-events: none; display: flex; flex-direction: column; justify-content: space-between;
-            padding: 20px; box-sizing: border-box;
+            padding: 15px; box-sizing: border-box; /* 稍微减小边距适配手机 */
         }
         .pointer-events-auto { pointer-events: auto; }
 
-        /* 左上角面板 */
-        .control-panel {
+        /* --- 面板通用样式 (新增折叠逻辑) --- */
+        .panel-container {
             background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(10px);
-            padding: 15px; border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.6);
-            box-shadow: 0 4px 15px rgba(176, 224, 255, 0.3); max-width: 250px;
-            max-height: 80vh; overflow-y: auto; transition: opacity 0.3s;
+            border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 4px 15px rgba(176, 224, 255, 0.3);
+            transition: all 0.3s ease;
+            overflow: hidden; /* 关键：隐藏折叠的内容 */
         }
-        .control-panel h3 { margin: 0 0 10px 0; font-size: 16px; color: #ff6b95; }
         
+        .panel-header {
+            padding: 10px 15px;
+            display: flex; justify-content: space-between; align-items: center;
+            cursor: pointer; background: rgba(255,255,255,0.2);
+        }
+        .panel-header h3 { margin: 0; font-size: 14px; color: #ff6b95; font-weight: bold; }
+        .toggle-btn { font-size: 12px; color: #4a5d7e; font-weight: bold; }
+
+        .panel-content {
+            padding: 15px; padding-top: 5px;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            max-height: 500px; /* 展开时的最大高度 */
+            opacity: 1;
+        }
+        
+        /* 折叠状态 */
+        .minimized .panel-content {
+            max-height: 0; opacity: 0; padding: 0 15px; /* 隐藏内容 */
+        }
+
+        /* 左上角面板 */
+        .control-panel { max-width: 250px; max-height: 80vh; overflow-y: auto; }
+        /* 针对手机优化：面板太高时自身也可以滚动 */
+        .panel-content.scrollable { overflow-y: auto; max-height: 60vh; }
+
         button, input[type="file"]::file-selector-button {
             background: linear-gradient(135deg, #ffc0cb 0%, #87ceeb 100%);
-            border: none; border-radius: 20px; color: white; padding: 8px 15px;
-            cursor: pointer; font-size: 12px; margin-bottom: 5px; transition: transform 0.2s;
+            border: none; border-radius: 20px; color: white; padding: 6px 12px;
+            cursor: pointer; font-size: 12px; margin-bottom: 5px; width: 100%;
         }
-        button:hover { transform: scale(1.05); }
-        input[type="file"] { font-size: 12px; width: 100%; margin-bottom: 5px; }
-        .clear-data-btn { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%) !important; width: 100%; margin-top: 10px; }
+        .clear-data-btn { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%) !important; margin-top: 5px; }
 
         /* 播放列表 */
         .playlist-box {
-            margin-top: 5px; margin-bottom: 10px; max-height: 100px; overflow-y: auto;
+            margin-top: 5px; margin-bottom: 10px; max-height: 80px; overflow-y: auto;
             background: rgba(0, 0, 0, 0.05); border-radius: 8px; padding: 5px;
         }
-        .playlist-box::-webkit-scrollbar { width: 4px; }
+        .playlist-box::-webkit-scrollbar { width: 3px; }
         .playlist-box::-webkit-scrollbar-thumb { background: #ffc0cb; border-radius: 2px; }
         .track-item {
-            font-size: 11px; padding: 4px 8px; cursor: pointer; color: #555;
+            font-size: 10px; padding: 3px 6px; cursor: pointer; color: #555;
             border-bottom: 1px solid rgba(255, 255, 255, 0.3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        .track-item:hover { background: rgba(255, 255, 255, 0.5); color: #ff6b95; }
         .track-item.active { color: #ff6b95; font-weight: bold; background: rgba(255, 255, 255, 0.8); border-radius: 4px; }
 
         /* 右下角面板 */
-        .ai-panel { align-self: flex-end; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
-        .camera-box { position: relative; width: 160px; height: 120px; background: #000; border-radius: 12px; overflow: hidden; border: 2px solid #fff; }
+        .ai-panel { align-self: flex-end; display: flex; flex-direction: column; align-items: flex-end; }
+        
+        .camera-box { 
+            position: relative; width: 120px; height: 90px; background: #000; 
+            border-radius: 8px; overflow: hidden; border: 2px solid #fff; margin-top: 5px;
+        }
         #webcam, #output_canvas { position: absolute; width: 100%; height: 100%; left: 0; top: 0; transform: scaleX(-1); }
-        .guide-box { background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(8px); padding: 15px; border-radius: 12px; font-size: 12px; max-width: 220px; text-align: right; }
-        .guide-item { margin: 4px 0; display: flex; align-items: center; justify-content: flex-end; gap: 8px;}
-        .icon { font-size: 16px; }
+        
+        .guide-item { margin: 2px 0; display: flex; align-items: center; justify-content: flex-end; gap: 5px; font-size: 11px;}
+        .icon { font-size: 14px; }
 
         /* Loading & UI */
         #loading-screen {
@@ -74,15 +101,16 @@
             display: none; pointer-events: auto; flex-direction: column; align-items: center; justify-content: center;
             background: rgba(255, 240, 245, 0.2); backdrop-filter: blur(2px);
         }
-        .countdown-title { font-size: 24px; color: #87CEEB; letter-spacing: 2px; margin-bottom: 20px; text-shadow: 0 0 10px rgba(135, 206, 235, 0.5); }
-        .countdown-number { font-size: 120px; font-weight: bold; color: #87CEEB; text-shadow: 0 0 20px rgba(135, 206, 235, 0.8); transition: all 0.2s; }
+        .countdown-title { font-size: 20px; color: #87CEEB; letter-spacing: 2px; margin-bottom: 20px; text-shadow: 0 0 10px rgba(135, 206, 235, 0.5); }
+        .countdown-number { font-size: 80px; font-weight: bold; color: #87CEEB; text-shadow: 0 0 20px rgba(135, 206, 235, 0.8); }
+        @media (min-width: 600px) { .countdown-number { font-size: 120px; } .countdown-title { font-size: 24px; } }
+        
         .pulse { animation: pulse-anim 1s infinite; }
         @keyframes pulse-anim { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
         #skip-countdown-btn {
             margin-top: 40px; background: rgba(255, 255, 255, 0.3); border: 2px solid #87CEEB; color: #87CEEB;
-            padding: 10px 30px; border-radius: 30px; cursor: pointer; font-size: 16px; font-weight: bold; transition: all 0.3s;
+            padding: 10px 30px; border-radius: 30px; cursor: pointer; font-size: 14px; font-weight: bold; transition: all 0.3s;
         }
-        #skip-countdown-btn:hover { background: #87CEEB; color: white; transform: scale(1.1); }
         
         #bgm-input, #img-input { display: none; }
     </style>
@@ -114,30 +142,48 @@
     </div>
 
     <div id="ui-layer">
-        <div class="control-panel pointer-events-auto">
-            <h3>✨ 记忆时刻</h3>
-            <button onclick="document.getElementById('img-input').click()">📸 上传照片上墙</button>
-            <input type="file" id="img-input" accept="image/*" multiple>
-            <div style="height:10px;"></div>
-            <h3>🎵 氛围音乐</h3>
-            <button onclick="document.getElementById('bgm-input').click()">📂 添加歌曲</button>
-            <input type="file" id="bgm-input" accept="audio/*" multiple>
-            <div id="playlist-container" class="playlist-box" style="display:none;"></div>
-            <button id="play-pause-btn">▶ 播放 / 暂停</button>
-            <div style="margin-top:10px; border-top: 1px solid #ccc; padding-top:5px;">
-                <button id="fullscreen-btn">⛶ 全屏体验</button>
-                <button id="clear-db-btn" class="clear-data-btn">🗑️ 清空本地缓存</button>
+        
+        <div id="ctrl-panel-box" class="panel-container control-panel pointer-events-auto">
+            <div class="panel-header" onclick="togglePanel('ctrl-panel-box')">
+                <h3>✨ 记忆与音乐</h3>
+                <span class="toggle-btn">▼</span>
+            </div>
+            
+            <div class="panel-content scrollable">
+                <button onclick="document.getElementById('img-input').click()">📸 上传照片上墙</button>
+                <input type="file" id="img-input" accept="image/*" multiple>
+                
+                <div style="height:5px;"></div>
+                <button onclick="document.getElementById('bgm-input').click()">📂 添加歌曲</button>
+                <input type="file" id="bgm-input" accept="audio/*" multiple>
+                
+                <div id="playlist-container" class="playlist-box" style="display:none;"></div>
+                <button id="play-pause-btn">▶ 播放 / 暂停</button>
+                
+                <div style="margin-top:8px; border-top: 1px solid rgba(255,255,255,0.5); padding-top:5px;">
+                    <button id="fullscreen-btn">⛶ 全屏</button>
+                    <button id="clear-db-btn" class="clear-data-btn">🗑️ 清空缓存</button>
+                </div>
             </div>
         </div>
-        <div class="ai-panel pointer-events-auto">
-            <div class="guide-box">
-                <div style="font-weight: bold; margin-bottom: 5px; color:#ff6b95">AI 手势魔法</div>
+
+        <div id="ai-panel-box" class="panel-container ai-panel pointer-events-auto">
+            <div class="panel-header" style="width: 100%; box-sizing: border-box;" onclick="togglePanel('ai-panel-box')">
+                <h3 style="margin-left:auto;">AI 魔法</h3>
+                <span class="toggle-btn" style="margin-left: 10px;">▼</span>
+            </div>
+
+            <div class="panel-content">
                 <div class="guide-item">聚合 (爱心) <span class="icon">✊</span></div>
                 <div class="guide-item">变身 (萌宠) <span class="icon">🖐</span></div>
                 <div class="guide-item">缩放 (Zoom) <span class="icon">👌</span></div>
                 <div class="guide-item">点击照片 <span class="icon">🖱️</span></div>
+                
+                <div class="camera-box">
+                    <video id="webcam" autoplay playsinline></video>
+                    <canvas id="output_canvas"></canvas>
+                </div>
             </div>
-            <div class="camera-box"><video id="webcam" autoplay playsinline></video><canvas id="output_canvas"></canvas></div>
         </div>
     </div>
 
@@ -153,11 +199,19 @@
         import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
         import TWEEN from '@tweenjs/tween.js';
 
-        // ==========================================
-        //  🔴 这里是给朋友看的配置区 (SHARED MEMORY)
-        // ==========================================
-        // 请将照片和音乐文件放在和 index.html 同一个文件夹里 (或者 assets/ 文件夹)
-        // 然后在这里写上文件名。例如: 'my_photo.jpg' 或 'assets/song.mp3'
+        // --- 全局：面板折叠功能 ---
+        window.togglePanel = function(id) {
+            const panel = document.getElementById(id);
+            const btn = panel.querySelector('.toggle-btn');
+            panel.classList.toggle('minimized');
+            if (panel.classList.contains('minimized')) {
+                btn.innerText = '▲'; // 折叠时显示向上箭头
+            } else {
+                btn.innerText = '▼'; // 展开时显示向下箭头
+            }
+        };
+
+        // --- SHARED ASSETS ---
         const SHARED_ASSETS = {
             images: [
                    '1 (2).jpg', 
@@ -171,6 +225,7 @@
                    '1 (10).jpg',
                    '1 (11).jpg'
             ],
+
             music: [
                 // 第一首歌
                 { name: '我', url: '1. 我.mp3' }, 
@@ -182,9 +237,8 @@
                 { name: '一千一万遍', url: '3. 一千一万遍.mp3' } 
             ]
         };
-        // ==========================================
 
-        // --- IndexedDB (本地持久化) ---
+        // --- IndexedDB ---
         const DB_NAME = 'DreamSplendorDB'; const DB_VERSION = 1; let db;
         function initDB() {
             return new Promise((resolve, reject) => {
@@ -221,7 +275,7 @@
             });
         }
 
-        // --- Config & State ---
+        // --- Config ---
         const CONFIG = { count: 1500, colors: [0xffc0cb, 0x87ceeb, 0xff69b4, 0x98fb98], bloomStrength: 0.6, bloomRadius: 0.4, bloomThreshold: 0.4 };
         const STATE = { mode: 'intro', isZoomed: false, handDetected: false, rotationSpeed: 0.001, focusedPhoto: null };
 
@@ -247,9 +301,7 @@
                 controls.enableDamping = true; controls.dampingFactor = 0.05; controls.enablePan = false;
                 controls.minDistance = 10; controls.maxDistance = 150;
 
-                // Raycaster for click interaction
-                raycaster = new THREE.Raycaster();
-                mouse = new THREE.Vector2();
+                raycaster = new THREE.Raycaster(); mouse = new THREE.Vector2();
                 window.addEventListener('click', onMouseClick, false);
 
                 const renderScene = new RenderPass(scene, camera);
@@ -269,7 +321,6 @@
                 window.addEventListener('resize', onWindowResize);
                 setupUI();
                 animate();
-
             } catch (err) { console.error("Init Error:", err); finishLoading(); }
         }
 
@@ -282,80 +333,50 @@
             startBtn.addEventListener('click', startIntro);
         }
 
-        // --- Interaction: Click to Zoom Photo ---
         function onMouseClick(event) {
-            // 如果点击的是 UI 上的元素，忽略
-            if (event.target.closest('button') || event.target.closest('.control-panel')) return;
+            // 如果点击的是面板头部，忽略 (已被toggle处理)
+            if (event.target.closest('.panel-header') || event.target.closest('button') || event.target.closest('.control-panel .panel-content')) return;
 
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
             raycaster.setFromCamera(mouse, camera);
 
-            // 如果当前已经聚焦了某张照片，再次点击则还原
-            if (STATE.focusedPhoto) {
-                unzoomPhoto();
-                return;
-            }
+            if (STATE.focusedPhoto) { unzoomPhoto(); return; }
 
-            // 检测点击
             const intersects = raycaster.intersectObjects(photoMeshes.map(pm => pm.mesh), true);
             if (intersects.length > 0) {
-                // 找到对应的 photoMesh 对象
                 const object = intersects[0].object;
-                const parent = object.parent; // 因为有 border
+                const parent = object.parent; 
                 const targetMesh = parent.isMesh ? parent : object;
                 const pm = photoMeshes.find(p => p.mesh === targetMesh || p.mesh === object);
-                
                 if (pm) zoomPhoto(pm);
             }
         }
 
         function zoomPhoto(pm) {
-            STATE.focusedPhoto = pm;
-            pm.isFocused = true; 
-            
-            // === 修改点 1：设定一个固定的舞台中心位置 ===
-            // 相机在 z=80，中心在 z=0。把照片放在 z=45 的位置，既突出又不会太近。
+            STATE.focusedPhoto = pm; pm.isFocused = true; 
             const targetPos = new THREE.Vector3(0, 5, 45);
-
-            // 动画移动到舞台中心
             new TWEEN.Tween(pm.mesh.position).to(targetPos, 1000).easing(TWEEN.Easing.Exponential.Out).start();
             
-            // === 修改点 2：强制让照片正对相机 ===
-            // 计算面向相机的旋转角度
-            const dummy = new THREE.Object3D();
-            dummy.position.copy(targetPos);
-            dummy.lookAt(camera.position);
+            const dummy = new THREE.Object3D(); dummy.position.copy(targetPos); dummy.lookAt(camera.position);
             new TWEEN.Tween(pm.mesh.quaternion).to(dummy.quaternion, 1000).easing(TWEEN.Easing.Exponential.Out).start();
-
-            // === 修改点 3：加大缩放倍数 (比如放大到 3 倍) ===
             new TWEEN.Tween(pm.mesh.scale).to({x: 3, y: 3, z: 3}, 1000).start();
 
-            // 隐藏 UI 防止干扰
-            document.querySelector('.control-panel').style.opacity = '0';
-            document.querySelector('.ai-panel').style.opacity = '0'; // 把右下角也隐藏掉
+            // 隐藏所有UI
+            document.querySelectorAll('.panel-container').forEach(el => el.style.opacity = '0');
         }
+
         function unzoomPhoto() {
             if (!STATE.focusedPhoto) return;
             const pm = STATE.focusedPhoto;
-            
-            // 还原位置
             const targetPos = (STATE.mode === 'tree') ? pm.treePos : pm.scatterPos;
-            new TWEEN.Tween(pm.mesh.position).to(targetPos, 800).easing(TWEEN.Easing.Back.Out).onComplete(() => {
-                pm.isFocused = false;
-            }).start();
-
-            // 还原缩放
+            new TWEEN.Tween(pm.mesh.position).to(targetPos, 800).easing(TWEEN.Easing.Back.Out).onComplete(() => { pm.isFocused = false; }).start();
             new TWEEN.Tween(pm.mesh.scale).to({x:1, y:1, z:1}, 800).start();
-
-            // 还原旋转 (LookAt Camera 在 animate 里每帧会执行，所以只要位置对了就行，或者重置旋转)
-            pm.mesh.lookAt(camera.position); 
-
             STATE.focusedPhoto = null;
-            document.querySelector('.control-panel').style.opacity = '1';
+            // 恢复 UI
+            document.querySelectorAll('.panel-container').forEach(el => el.style.opacity = '1');
         }
 
-        // --- Start Intro ---
         function startIntro() {
             const screen = document.getElementById('loading-screen'); screen.style.opacity = 0; setTimeout(() => screen.remove(), 1000);
             const overlay = document.getElementById('countdown-overlay'); 
@@ -375,18 +396,17 @@
             checkTimer = setInterval(() => {
                 const now = new Date(); const t = now.getTime(); const dist = TARGET_DATE - t;
                 if (dist <= 0) {
-                    clearInterval(checkTimer); number.innerText = "2026"; number.style.fontSize = "120px"; number.classList.add('pulse');
+                    clearInterval(checkTimer); number.innerText = "2026"; number.classList.add('pulse');
                     title.innerText = "新年快乐 Happy New Year"; skipBtn.style.display = 'none';
                     setTimeout(() => { overlay.style.opacity = 0; setTimeout(() => { overlay.style.display = 'none'; initMainScene(); }, 1000); }, 2000);
                 } else if (t >= START_SHOWING_NUMBERS) {
-                    title.innerText = "即将迈入 2026"; number.innerText = Math.floor(dist / 1000); number.classList.add('pulse'); number.style.fontSize = "150px";
+                    title.innerText = "即将迈入 2026"; number.innerText = Math.floor(dist / 1000); number.classList.add('pulse');
                 } else {
-                    title.innerText = "新年倒计时 Loading..."; number.innerText = now.toTimeString().split(' ')[0]; number.classList.remove('pulse'); number.style.fontSize = "60px";
+                    title.innerText = "新年倒计时 Loading..."; number.innerText = now.toTimeString().split(' ')[0]; number.classList.remove('pulse');
                 }
             }, 1000);
         }
 
-        // --- Main Scene ---
         function initMainScene() {
             STATE.mode = 'tree';
             const geos = [ new THREE.SphereGeometry(0.4,16,16), new THREE.IcosahedronGeometry(0.35,1), new THREE.SphereGeometry(0.25,12,12), new THREE.IcosahedronGeometry(0.3,2) ];
@@ -454,34 +474,25 @@
                 if (newState === 'tree') data.targetPos = data.treePos;
                 else if (newState === 'scatter') data.targetPos = (animalType === 'rabbit') ? data.rabbitPos : data.sheepPos;
             });
-            photoMeshes.forEach(pm => {
-                // 如果照片正在被查看，不改变目标位置，避免飞走
-                if (!pm.isFocused) pm.targetPos = (newState === 'tree') ? pm.treePos : pm.scatterPos;
-            });
+            photoMeshes.forEach(pm => { if (!pm.isFocused) pm.targetPos = (newState === 'tree') ? pm.treePos : pm.scatterPos; });
         }
 
         function handleZoom(doZoom) {
-            // 如果正在查看照片，禁用手势缩放
             if (STATE.focusedPhoto) return;
             if (STATE.isZoomed === doZoom) return; STATE.isZoomed = doZoom;
             new TWEEN.Tween(camera.position).to({ z: doZoom ? 25 : 80 }, 1000).easing(TWEEN.Easing.Quadratic.Out).start();
         }
 
         function animate(time) {
-            requestAnimationFrame(animate);
-            TWEEN.update(time); if(controls) controls.update();
+            requestAnimationFrame(animate); TWEEN.update(time); if(controls) controls.update();
             if (instanceData.length === 0) { composer.render(); return; }
 
             const dummy = new THREE.Object3D(), lerpSpeed = 0.05;
-            const backgroundPushZ = STATE.focusedPhoto ? -60 : 0;
+            const backgroundPushZ = STATE.focusedPhoto ? -60 : 0; // 照片放大时推远背景
 
             for(let i=0; i<instanceData.length; i++) {
-                const d = instanceData[i];
-                
-                // [修改点] 目标位置要加上偏移量
-                let finalTarget = d.targetPos.clone();
-                finalTarget.z += backgroundPushZ;
-                
+                const d = instanceData[i]; 
+                let finalTarget = d.targetPos.clone(); finalTarget.z += backgroundPushZ;
                 d.currentPos.lerp(finalTarget, lerpSpeed);
                 const noise = Math.sin(time * 0.001 + d.index) * 0.05;
                 dummy.position.copy(d.currentPos); dummy.position.y += noise;
@@ -489,16 +500,9 @@
                 instancedMeshes[d.type].setMatrixAt(d.index, dummy.matrix);
             }
             instancedMeshes.forEach(mesh => mesh.instanceMatrix.needsUpdate = true);
-            
-            // 更新照片位置
             photoMeshes.forEach(pm => {
-                if (pm.isFocused) {
-                    // 如果聚焦，只让它轻微漂浮，不跟随全局移动
-                    pm.mesh.lookAt(camera.position);
-                } else {
-                    pm.mesh.position.lerp(pm.targetPos, lerpSpeed);
-                    pm.mesh.lookAt(camera.position);
-                }
+                if (pm.isFocused) { pm.mesh.lookAt(camera.position); }
+                else { pm.mesh.position.lerp(pm.targetPos, lerpSpeed); pm.mesh.lookAt(camera.position); }
             });
 
             if (STATE.mode === 'scatter') {
@@ -509,61 +513,13 @@
             composer.render();
         }
 
-        let vision, handLandmarker;
-        async function setupMediaPipe() {
-            try {
-                vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
-                handLandmarker = await HandLandmarker.createFromOptions(vision, {
-                    baseOptions: { modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`, delegate: "GPU" },
-                    runningMode: "VIDEO", numHands: 1
-                });
-                startWebcam();
-            } catch (e) { console.warn("AI Fail", e); document.querySelector('.guide-box').innerHTML += "<div style='color:red'>AI服务失败</div>"; }
-        }
-        function startWebcam() {
-            const video = document.getElementById("webcam"), canvas = document.getElementById("output_canvas"), canvasCtx = canvas.getContext("2d");
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
-            navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => { video.srcObject = stream; video.addEventListener("loadeddata", predictWebcam); });
-            let lastVideoTime = -1;
-            function predictWebcam() {
-                if(video.videoWidth) { canvas.width = video.videoWidth; canvas.height = video.videoHeight; }
-                let startTimeMs = performance.now();
-                if (lastVideoTime !== video.currentTime && handLandmarker) {
-                    lastVideoTime = video.currentTime;
-                    const results = handLandmarker.detectForVideo(video, startTimeMs);
-                    canvasCtx.save(); canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-                    if (results.landmarks && results.landmarks.length > 0) {
-                        STATE.handDetected = true; drawHand(canvasCtx, results.landmarks[0]); analyzeGesture(results.landmarks[0]);
-                    } else STATE.handDetected = false;
-                    canvasCtx.restore();
-                }
-                window.requestAnimationFrame(predictWebcam);
-            }
-        }
-        function drawHand(ctx, lm) { ctx.fillStyle = "#ff6b95"; ctx.strokeStyle = "#87ceeb"; ctx.lineWidth = 2; lm.forEach(p => { ctx.beginPath(); ctx.arc(p.x * ctx.canvas.width, p.y * ctx.canvas.height, 3, 0, 2 * Math.PI); ctx.fill(); }); }
-        function analyzeGesture(lm) {
-            const wrist = lm[0], thumb = lm[4], index = lm[8];
-            const pinchDist = Math.hypot(thumb.x - index.x, thumb.y - index.y);
-            if (pinchDist < 0.05) { handleZoom(true); return; } else handleZoom(false);
-            const tips = [lm[8], lm[12], lm[16], lm[20]];
-            let avgDist = 0; tips.forEach(tip => avgDist += Math.hypot(tip.x - wrist.x, tip.y - wrist.y)); avgDist /= 4;
-            if (avgDist < 0.25) switchState('tree'); else if (avgDist > 0.4) switchState('scatter');
-            if (STATE.mode === 'scatter') { if (wrist.x < 0.4) STATE.rotationSpeed = -0.01; else if (wrist.x > 0.6) STATE.rotationSpeed = 0.01; else STATE.rotationSpeed = 0; }
-        }
-
-        // --- UI & Persistence Logic ---
-function setupUI() {
-            // --- 1. 变量声明移到最顶端 (修复报错的核心) ---
-            const imgInput = document.getElementById('img-input');
-            const bgmInput = document.getElementById('bgm-input');
-            const audioPlayer = document.getElementById('bgm-player');
-            const playlistContainer = document.getElementById('playlist-container');
+        function setupUI() {
+            const imgInput = document.getElementById('img-input'), bgmInput = document.getElementById('bgm-input');
+            const audioPlayer = document.getElementById('bgm-player'), playlistContainer = document.getElementById('playlist-container');
             const playPauseBtn = document.getElementById('play-pause-btn');
             
-            let playlist = []; 
-            let currentTrackIndex = -1;
+            let playlist = [], currentTrackIndex = -1;
 
-            // --- 2. 定义功能函数 (放在这里确保逻辑通顺) ---
             function renderPlaylist() {
                 playlistContainer.innerHTML = '';
                 playlist.forEach((track, index) => {
@@ -573,87 +529,51 @@ function setupUI() {
                     playlistContainer.appendChild(div);
                 });
             }
-
             function playTrack(index) {
                 if (index < 0 || index >= playlist.length) return;
-                currentTrackIndex = index; 
-                audioPlayer.src = playlist[index].url; 
-                audioPlayer.play();
-                playPauseBtn.innerText = "⏸ 暂停"; 
-                renderPlaylist();
+                currentTrackIndex = index; audioPlayer.src = playlist[index].url; audioPlayer.play();
+                playPauseBtn.innerText = "⏸ 暂停"; renderPlaylist();
             }
 
-            // --- 3. 加载数据 (现在 playlist 已经存在了，不会报错) ---
-            
-            // 加载 IndexedDB (本地缓存)
-            loadFromDB('photos').then(items => { 
-                items.forEach(item => { const url = URL.createObjectURL(item.file); createPhotoMesh(url); }); 
-            });
+            // Load Data
+            loadFromDB('photos').then(items => { items.forEach(item => { const url = URL.createObjectURL(item.file); createPhotoMesh(url); }); });
             loadFromDB('music').then(items => { 
-                items.forEach(item => { 
-                    playlist.push({name: item.name, url: URL.createObjectURL(item.file)}); 
-                });
+                items.forEach(item => playlist.push({name: item.name, url: URL.createObjectURL(item.file)}));
                 if(items.length > 0) { playlistContainer.style.display = 'block'; renderPlaylist(); }
             });
-            
-            // 加载 SHARED_ASSETS (给朋友看的预设)
             SHARED_ASSETS.images.forEach(url => createPhotoMesh(url));
-            SHARED_ASSETS.music.forEach(track => {
-                playlist.push(track);
-                playlistContainer.style.display = 'block';
-                renderPlaylist();
-            });
+            SHARED_ASSETS.music.forEach(track => { playlist.push(track); playlistContainer.style.display = 'block'; renderPlaylist(); });
 
-            // --- 4. 绑定事件监听器 ---
-
-            // 图片上传
+            // Listeners
             imgInput.addEventListener('change', (e) => {
-                const files = Array.from(e.target.files);
-                files.forEach(file => {
-                    saveToDB('photos', file, file.name);
-                    createPhotoMesh(URL.createObjectURL(file));
-                });
+                Array.from(e.target.files).forEach(file => { saveToDB('photos', file, file.name); createPhotoMesh(URL.createObjectURL(file)); });
             });
-
-            // 音乐上传
             bgmInput.addEventListener('change', (e) => {
-                const files = Array.from(e.target.files); if (files.length === 0) return;
-                files.forEach(file => {
-                    saveToDB('music', file, file.name);
-                    playlist.push({ name: file.name, url: URL.createObjectURL(file) });
+                Array.from(e.target.files).forEach(file => {
+                    saveToDB('music', file, file.name); playlist.push({ name: file.name, url: URL.createObjectURL(file) });
                 });
                 playlistContainer.style.display = 'block'; renderPlaylist();
-                if (audioPlayer.paused && currentTrackIndex === -1) playTrack(playlist.length - files.length);
+                if (audioPlayer.paused && currentTrackIndex === -1) playTrack(playlist.length - e.target.files.length);
             });
-
-            // 播放控制
             audioPlayer.addEventListener('ended', () => {
                 let nextIndex = currentTrackIndex + 1; if (nextIndex >= playlist.length) nextIndex = 0;
                 playTrack(nextIndex);
             });
-            
             playPauseBtn.addEventListener('click', () => {
                 if (playlist.length === 0) { alert("请先上传歌曲~"); return; }
                 if (audioPlayer.paused) { audioPlayer.play(); playPauseBtn.innerText = "⏸ 暂停"; }
                 else { audioPlayer.pause(); playPauseBtn.innerText = "▶ 播放"; }
             });
-
-            // 辅助功能
             document.getElementById('clear-db-btn').addEventListener('click', clearDB);
             document.getElementById('fullscreen-btn').addEventListener('click', () => { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); });
         }
+
         function createPhotoMesh(imgUrl) {
             const textureLoader = new THREE.TextureLoader();
             textureLoader.load(imgUrl, (tex) => {
-                const aspect = tex.image.width / tex.image.height;
-                const width = 4; const height = width / aspect;
+                const aspect = tex.image.width / tex.image.height; const width = 4; const height = width / aspect;
                 const geo = new THREE.PlaneGeometry(width, height);
-                const mat = new THREE.MeshStandardMaterial({ 
-                    map: tex, 
-                    side: THREE.DoubleSide,
-                    roughness: 0.8, 
-                    metalness: 0.1
-                });
+                const mat = new THREE.MeshStandardMaterial({ map: tex, side: THREE.DoubleSide, roughness: 0.8, metalness: 0.1 });
                 const mesh = new THREE.Mesh(geo, mat);
                 const border = new THREE.Mesh(new THREE.PlaneGeometry(width + 0.2, height + 0.2), new THREE.MeshBasicMaterial({ color: 0xffc0cb }));
                 border.position.z = -0.01; mesh.add(border);
@@ -667,12 +587,10 @@ function setupUI() {
                 photoMeshes.push(pm);
             });
         }
-
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight); composer.setSize(window.innerWidth, window.innerHeight);
         }
-
         init();
     </script>
 </body>
