@@ -5,45 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>2026 Dream Splendor - 萌趣盛典</title>
     <style>
-/* --- 新增：倒计时 UI 样式 --- */
-        #countdown-overlay {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            z-index: 50;
-            display: none; /* 默认隐藏，由 JS 控制 */
-            pointer-events: none;
-        }
-
-        .countdown-title {
-            font-size: 24px;
-            color: #87CEEB; /* 粉蓝色 */
-            letter-spacing: 2px;
-            margin-bottom: 20px;
-            text-shadow: 0 0 10px rgba(135, 206, 235, 0.5);
-            font-weight: 300;
-        }
-
-        .countdown-number {
-            font-size: 120px;
-            font-weight: bold;
-            font-family: 'Segoe UI', sans-serif; /* 规范字体 */
-            color: #87CEEB; /* 粉蓝色 */
-            text-shadow: 0 0 20px rgba(135, 206, 235, 0.8), 0 0 40px rgba(255, 192, 203, 0.4);
-            transition: all 0.2s;
-        }
-
-        /* 脉冲动画 */
-        .pulse {
-            animation: pulse-anim 1s infinite;
-        }
-        @keyframes pulse-anim {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.05); opacity: 0.8; }
-            100% { transform: scale(1); opacity: 1; }
-        }
         /* CSS 样式：梦幻风格与 UI 布局 */
         body {
             margin: 0;
@@ -173,6 +134,44 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+        /* --- 倒计时 UI 样式 --- */
+        #countdown-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 50;
+            display: none; /* JS控制显示 */
+            pointer-events: none;
+            width: 100%;
+        }
+
+        .countdown-title {
+            font-size: 24px;
+            color: #87CEEB; /* 粉蓝 */
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(135, 206, 235, 0.5);
+            font-weight: 300;
+        }
+
+        .countdown-number {
+            font-size: 120px;
+            font-weight: bold;
+            font-family: 'Segoe UI', sans-serif;
+            color: #87CEEB;
+            text-shadow: 0 0 20px rgba(135, 206, 235, 0.8), 0 0 40px rgba(255, 192, 203, 0.4);
+            transition: all 0.2s;
+        }
+
+        .pulse { animation: pulse-anim 1s infinite; }
+        @keyframes pulse-anim {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
         /* 隐藏的 input */
         #bgm-input, #img-input { display: none; }
     </style>
@@ -190,16 +189,16 @@
 </head>
 <body>
 
-    <div id="countdown-overlay">
-        <div class="countdown-title" id="cd-title">新年倒计时 Loading...</div>
-        <div class="countdown-number" id="cd-number">--</div>
-    </div>
-
     <div id="loading-screen">
         <div class="loader"></div>
         <h2 style="color: #ff6b95; margin-top: 20px;">2026 Dream Splendor</h2>
         <p id="loading-text" style="color: #888;">正在加载 AI 引擎...</p>
         <button id="start-btn" style="display:none; font-size: 18px; padding: 10px 30px; margin-top: 20px;">开启盛典</button>
+    </div>
+
+    <div id="countdown-overlay">
+        <div class="countdown-title" id="cd-title">新年倒计时 Loading...</div>
+        <div class="countdown-number" id="cd-number">--</div>
     </div>
 
     <div id="ui-layer">
@@ -217,13 +216,13 @@
             </div>
         </div>
 
-        <div class="ai-panel pointer-events-auto">
+<div class="ai-panel pointer-events-auto">
             <div class="guide-box">
                 <div style="font-weight: bold; margin-bottom: 5px; color:#ff6b95">AI 手势魔法</div>
                 <div class="guide-item">聚合 (爱心) <span class="icon">✊</span></div>
                 <div class="guide-item">变身 (萌宠) <span class="icon">🖐</span></div>
                 <div class="guide-item">缩放 (Zoom) <span class="icon">👌</span></div>
-                <div class="guide-item">旋转场景 <span class="icon">👋</span></div>
+                <div class="guide-item">旋转场景 <span class="icon">🖱️</span></div>
             </div>
             <div class="camera-box">
                 <video id="webcam" autoplay playsinline></video>
@@ -241,13 +240,11 @@
         import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-        import { FontLoader } from 'three/addons/loaders/FontLoader.js';
-        import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
         import TWEEN from '@tweenjs/tween.js';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js'; // 新增这一行
 
-        // --- 1. 配置修改 ---
+        // --- Configuration ---
         const CONFIG = {
             count: 1500, 
             colors: [0xffc0cb, 0x87ceeb, 0xff69b4, 0x98fb98], 
@@ -265,8 +262,6 @@
         };
 
         let scene, camera, renderer, composer, controls;
-        let font = null;
-        let introParticles; 
         let instancedMeshes = []; 
         let photoMeshes = []; 
         let goldParticles; 
@@ -289,12 +284,14 @@
                 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
                 renderer.toneMapping = THREE.ReinhardToneMapping;
                 container.appendChild(renderer.domElement);
+
+                // 控制器 (新增)
                 controls = new OrbitControls(camera, renderer.domElement);
-                controls.enableDamping = true; // 开启阻尼滑动，更有感觉
+                controls.enableDamping = true;
                 controls.dampingFactor = 0.05;
-                controls.enablePan = false; // 禁止右键平移，防止视角跑偏
-                controls.minDistance = 10;  // 最近缩放距离
-                controls.maxDistance = 150; // 最远缩放距离                
+                controls.enablePan = false;
+                controls.minDistance = 10;
+                controls.maxDistance = 150;
 
                 // Post Processing
                 const renderScene = new RenderPass(scene, camera);
@@ -321,16 +318,6 @@
                 updateLoadingText("正在连接 AI 引擎...");
                 await setupMediaPipe();
                 
-                updateLoadingText("正在加载字体...");
-                try {
-                    await Promise.race([
-                        loadFont(),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error("Font Timeout")), 3000))
-                    ]);
-                } catch (e) {
-                    console.warn("字体加载跳过", e);
-                }
-                
                 finishLoading();
                 window.addEventListener('resize', onWindowResize);
                 setupUI();
@@ -355,187 +342,64 @@
             startBtn.addEventListener('click', startIntro);
         }
 
-        function loadFont() {
-            return new Promise((resolve, reject) => {
-                const loader = new FontLoader();
-                loader.load('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/fonts/helvetiker_bold.typeface.json', 
-                    (loadedFont) => { font = loadedFont; resolve(); },
-                    undefined,
-                    (err) => reject(err)
-                );
-            });
-        }
-
-        // --- 2. 倒计时升级：深蓝、加大 ---
-        function createTextParticles(text) {
-            if (!font) return; 
-
-            if (introParticles) scene.remove(introParticles);
-
-            const geometry = new TextGeometry(text, {
-                font: font,
-                size: 15,
-                height: 2,
-                curveSegments: 4,
-                bevelEnabled: true,
-                bevelThickness: 1,
-                bevelSize: 0.5,
-                bevelSegments: 2
-            });
-
-            geometry.center();
-            
-            const count = geometry.attributes.position.count;
-            const particlesGeo = new THREE.BufferGeometry();
-            const positions = new Float32Array(count * 3);
-            
-            for(let i=0; i<count*3; i++) {
-                positions[i] = geometry.attributes.position.array[i];
-            }
-            
-            particlesGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            
-            // 修改：颜色加深为 DeepSkyBlue，Size 加大
-            const material = new THREE.PointsMaterial({
-                color: 0x00BFFF, // DeepSkyBlue，比之前更深，对比度更高
-                size: 0.8,       // 粒子变大，文字更粗
-                sizeAttenuation: true,
-                transparent: true,
-                opacity: 1.0,    // 不透明
-                blending: THREE.AdditiveBlending
-            });
-
-            introParticles = new THREE.Points(particlesGeo, material);
-            scene.add(introParticles);
-            
-            introParticles.scale.set(0,0,0);
-            new TWEEN.Tween(introParticles.scale)
-                .to({x:1, y:1, z:1}, 500)
-                .easing(TWEEN.Easing.Elastic.Out)
-                .start();
-        }
-
+        // --- UI 倒计时逻辑 (修正版) ---
         function startIntro() {
-// --- 修改后：UI 倒计时逻辑 ---
-        
-        // 目标时间：2026年1月1日 00:00:00
-        const TARGET_DATE = new Date("2026-01-01T00:00:00").getTime();
-        // 触发倒计时的开始时间：2025年12月31日 23:59:00
-        const START_COUNTDOWN_DATE = new Date("2025-12-31T23:59:00").getTime();
-
-        function startIntro() {
-            // 1. 移除加载屏
             const screen = document.getElementById('loading-screen');
             screen.style.opacity = 0;
             setTimeout(() => screen.remove(), 1000);
 
-            // 2. 播放音乐
             const audio = document.getElementById('bgm-player');
             if (audio.src) audio.play().catch(e => console.log("Audio needs interaction"));
 
-            // 3. 显示 UI 层
+            // 显示 UI 层
             const overlay = document.getElementById('countdown-overlay');
             const title = document.getElementById('cd-title');
             const number = document.getElementById('cd-number');
             overlay.style.display = 'block';
 
-            // 4. 时间检查循环
+            // 模拟 10秒 倒计时 (演示用)
+            // 如果要用真实时间，请将下方 demoSeconds 逻辑替换为真实时间差
+            let demoSeconds = 10; 
+            
             const checkTimer = setInterval(() => {
-                const now = new Date().getTime();
-                
-                // --- 逻辑分支 ---
-                
-                // 情况 A: 还没到 23:59 (等待中)
-                // *为了让你现在能看到效果，我在逻辑里加了 '|| true' 来强制演示倒计时*
-                // *正式发布时，请去掉 '|| true'*
-                if (now < START_COUNTDOWN_DATE && false) { 
-                    title.innerText = "新年倒计时 Loading...";
-                    number.innerText = "Wait";
-                    number.style.fontSize = "40px";
-                } 
-                // 情况 B: 已经进入最后一分钟 (开始倒计时!)
-                else {
+                if (demoSeconds > 0) {
                     title.innerText = "即将迈入 2026";
-                    number.style.fontSize = "120px";
-                    number.classList.add('pulse'); // 添加心跳特效
+                    number.innerText = demoSeconds;
+                    number.classList.add('pulse');
+                    demoSeconds--;
+                } else {
+                    // 结束
+                    clearInterval(checkTimer);
+                    number.innerText = "2026";
                     
-                    // 计算剩余秒数
-                    // 正常逻辑是: Math.ceil((TARGET_DATE - now) / 1000);
-                    // 但为了演示，我们强制设定一个 10 秒倒计时
-                    // 如果你想用真实时间，请取消下面注释，注释掉 demo 逻辑
-                    
-                    /* 真实时间逻辑: */
-                    /*
-                    let distance = TARGET_DATE - now;
-                    let seconds = Math.floor((distance % (1000 * 60)) / 1000);
-                    */
-
-                    /* 演示逻辑 (从10倒数): */
-                    if (!window.demoSeconds) window.demoSeconds = 10;
-                    let seconds = window.demoSeconds;
-                    window.demoSeconds--;
-
-                    // 更新数字
-                    number.innerText = seconds;
-
-                    // 倒计时结束
-                    if (seconds < 0) {
-                        clearInterval(checkTimer);
-                        overlay.style.display = 'none'; // 隐藏 UI
-                        initMainScene(); // 进入 3D 主场景
-                    }
+                    // 停留1秒展示2026，然后进入场景
+                    setTimeout(() => {
+                        overlay.style.opacity = 0;
+                        setTimeout(() => {
+                             overlay.style.display = 'none';
+                             initMainScene(); 
+                        }, 1000);
+                    }, 1000);
                 }
             }, 1000);
         }
 
-            const sequence = ["5", "4", "3", "2", "1", "2026"];
-            let step = 0;
-
-            function nextStep() {
-                if (step >= sequence.length) {
-                    finishIntro();
-                    return;
-                }
-                step++;
-                setTimeout(nextStep, 1000); 
-            }
-            nextStep();
-        }
-
-        function finishIntro() {
-            if (introParticles) {
-                new TWEEN.Tween(introParticles.position)
-                    .to({z: 100}, 500)
-                    .easing(TWEEN.Easing.Exponential.In)
-                    .onComplete(() => {
-                        scene.remove(introParticles);
-                        initMainScene();
-                    })
-                    .start();
-            } else {
-                initMainScene();
-            }
-        }
-
-        // --- 3. 核心场景：新算法 (爱心 & 羊头) ---
+        // --- 核心场景：新几何体与算法 ---
         function initMainScene() {
             STATE.mode = 'tree';
             
+            // 修改：柔和的球体 + 自发光材质
             const geos = [
-                new THREE.SphereGeometry(0.4, 16, 16), // 标准球
-                new THREE.IcosahedronGeometry(0.35, 1), // 稍微有棱角的柔和球
-                new THREE.SphereGeometry(0.25, 12, 12), // 小球
-                new THREE.IcosahedronGeometry(0.3, 2)   // 非常圆润的球
+                new THREE.SphereGeometry(0.4, 16, 16), 
+                new THREE.IcosahedronGeometry(0.35, 1), 
+                new THREE.SphereGeometry(0.25, 12, 12), 
+                new THREE.IcosahedronGeometry(0.3, 2)   
             ];
 
             const mats = [
-                // 粉色系，带一点自发光
                 new THREE.MeshStandardMaterial({ color: CONFIG.colors[0], roughness: 0.6, metalness: 0.1, emissive: CONFIG.colors[0], emissiveIntensity: 0.3 }),
-                // 蓝色系
                 new THREE.MeshStandardMaterial({ color: CONFIG.colors[1], roughness: 0.5, metalness: 0.2, emissive: CONFIG.colors[1], emissiveIntensity: 0.3 }),
-                // 玫粉色，玻璃质感保留，但也加一点点自发光
                 new THREE.MeshPhysicalMaterial({ color: CONFIG.colors[2], transmission: 0.5, opacity: 0.9, roughness: 0.2, ior: 1.4, emissive: CONFIG.colors[2], emissiveIntensity: 0.2 }), 
-                // 嫩绿色
                 new THREE.MeshStandardMaterial({ color: CONFIG.colors[3], roughness: 0.6, metalness: 0.1, emissive: CONFIG.colors[3], emissiveIntensity: 0.3 })
             ];
 
@@ -546,27 +410,20 @@
                 instancedMeshes.push(mesh);
             });
 
-            // --- 升级后的形状算法 ---
-            
-            // 1. 爱心形态 (Heart 3D) - 替换原来的树
+            // 1. 爱心形态 (Heart 3D)
             function getHeartPos(i, total) {
-                // 使用心脏线公式
-                const t = Math.random() * Math.PI * 2; // 角度
-                const s = Math.cbrt(Math.random()); // 半径填充因子（使用立方根让内部不空心）
+                const t = Math.random() * Math.PI * 2; 
+                const s = Math.cbrt(Math.random()); 
                 
-                // 基本心形曲线
                 const hx = 16 * Math.pow(Math.sin(t), 3);
                 const hy = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
-                
-                // 3D 填充：增加 Z 轴厚度
-                const hz = (Math.random() - 0.5) * 8 * s; // 厚度
+                const hz = (Math.random() - 0.5) * 8 * s; 
 
-                const scale = 0.8 * s; // 整体缩放
-                
-                return new THREE.Vector3(hx * scale, hy * scale + 5, hz); // y+5 稍微抬高
+                const scale = 0.8 * s; 
+                return new THREE.Vector3(hx * scale, hy * scale + 5, hz); 
             }
 
-            // 2. 兔子 (保持不变)
+            // 2. 兔子
             function getRabbitPos(i, total) {
                 const rand = Math.random();
                 let pos = new THREE.Vector3();
@@ -588,47 +445,40 @@
                 return pos;
             }
 
-            // 3. 羊头 (Cute Sheep Head) - 替换原来的云
+            // 3. 羊头 (优化版，更突出)
             function getSheepHeadPos(i, total) {
                 const rand = Math.random();
                 let pos = new THREE.Vector3();
 
                 // 比例调整：脸40%，头顶毛40%，耳朵20%
                 if (rand < 0.4) {
-                    // --- 脸蛋 ---
-                    // 收紧半径，减少随机散射，使其更像一个结实的椭圆体
-                    const r = 5 + Math.random() * 2; // 半径范围 5-7
+                    // 脸蛋 (扁平)
+                    const r = 5 + Math.random() * 2;
                     const phi = Math.acos(-1 + 2 * Math.random());
                     const theta = Math.random() * Math.PI * 2;
-                    // X轴拉宽(1.4倍), Y轴压扁(0.8倍), Z轴前后压扁(0.7倍) -> 扁平脸
                     pos.set(r * Math.sin(phi) * Math.cos(theta) * 1.4, r * Math.sin(phi) * Math.sin(theta) * 0.8, r * Math.cos(phi) * 0.7);
                 } else if (rand < 0.8) {
-                    // --- 头顶卷毛 ---
-                    // 这是一个更密集的小半球，紧贴头顶
-                    const r = 3.5 + Math.random() * 1.5; // 半径范围 3.5-5
-                    // 只取上半球 (phi 0 到 PI/2)
+                    // 头顶卷毛 (集中)
+                    const r = 3.5 + Math.random() * 1.5; 
                     const phi = Math.random() * Math.PI / 2;
                     const theta = Math.random() * Math.PI * 2;
                     pos.set(r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta), r * Math.cos(phi) * 0.8);
-                    pos.y += 3.5; // 精确向上平移到头顶位置
+                    pos.y += 3.5; 
                 } else {
-                    // --- 耳朵 ---
-                    // 更长、更具体的下垂形状
+                    // 耳朵 (长条下垂)
                     const isLeft = rand < 0.9 ? -1 : 1;
-                    // 使用参数方程生成一个长条水滴形
-                    const t = Math.random() * Math.PI; // 0 到 PI
-                    const earLen = 6;
+                    const t = Math.random() * Math.PI;
                     const earWidth = 2;
                     
-                    let ex = Math.sin(t) * earWidth * isLeft; // 宽度
-                    let ey = -t * earLen * 0.8; // 向下垂，长度缩放
-                    let ez = Math.cos(t) * earWidth * 0.5 * (Math.random()-0.5); // 增加一点厚度随机
+                    let ex = Math.sin(t) * earWidth * isLeft; 
+                    let ey = -t * 6 * 0.8; 
+                    let ez = Math.cos(t) * earWidth * 0.5 * (Math.random()-0.5); 
                     
-                    // 定位到脸颊两侧，并稍微旋转
                     pos.set(ex + (isLeft * 6), ey + 2, ez + 2);
                 }
                 return pos;
             }
+
             const total = CONFIG.count;
             const dummy = new THREE.Object3D();
             let indexPerMesh = [0, 0, 0, 0];
@@ -637,19 +487,17 @@
                 const type = i % 4;
                 const idx = indexPerMesh[type];
 
-                // 使用新公式
-                const treePos = getHeartPos(i, total); // 变量名保持 treePos 以兼容，但内容是爱心
+                const treePos = getHeartPos(i, total); 
                 const rabbitPos = getRabbitPos(i, total);
-                const sheepPos = getSheepHeadPos(i, total); // 新羊头
+                const sheepPos = getSheepHeadPos(i, total); 
                 
-                // 默认从散开状态飞入
                 const currentPos = new THREE.Vector3((Math.random()-0.5)*100, (Math.random()-0.5)*100, (Math.random()-0.5)*100);
 
                 instanceData.push({
                     type: type,
                     index: idx,
                     currentPos: currentPos,
-                    targetPos: treePos, // 默认变爱心
+                    targetPos: treePos, 
                     treePos: treePos,
                     rabbitPos: rabbitPos,
                     sheepPos: sheepPos,
@@ -670,7 +518,7 @@
             scene.add(goldParticles);
         }
 
-        // --- 4. 交互逻辑 ---
+        // --- 交互逻辑 ---
         function switchState(newState) {
             if (STATE.mode === newState) return;
             
@@ -683,7 +531,7 @@
             
             instanceData.forEach(data => {
                 if (newState === 'tree') {
-                    data.targetPos = data.treePos; // 爱心
+                    data.targetPos = data.treePos; 
                 } else if (newState === 'scatter') {
                     data.targetPos = (animalType === 'rabbit') ? data.rabbitPos : data.sheepPos;
                 }
@@ -716,8 +564,8 @@
             requestAnimationFrame(animate);
 
             TWEEN.update(time);
-            if (controls) controls.update(); // 新增这一行，必须每帧调用
-            
+            if(controls) controls.update(); // 必须更新控制器
+
             if (instanceData.length === 0) {
                 composer.render();
                 return;
@@ -746,10 +594,12 @@
             });
 
             if (STATE.mode === 'scatter') {
-                const rSpeed = STATE.handDetected ? STATE.rotationSpeed * 5 : 0.0005;
-                scene.rotation.y += rSpeed;
-            } else {
-                scene.rotation.y += 0.0005;
+                // 如果手没检测到，且没有用户鼠标拖拽(controls不活跃)，则稍微自转
+                // 这里我们稍微改一下：如果有 controls，通常不自动旋转以免打架
+                // 但为了氛围，我们可以让 controls 的 autoRotate 属性来控制
+                // 简单起见，这里仅在手势控制时强制旋转
+                const rSpeed = STATE.handDetected ? STATE.rotationSpeed * 5 : 0;
+                if(STATE.handDetected) scene.rotation.y += rSpeed;
             }
 
             if(goldParticles) {
