@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>2026 Dream Splendor - 萌趣盛典</title>
     <style>
-        /* CSS 样式：梦幻风格与 UI 布局 */
+        /* CSS 样式 */
         body {
             margin: 0; overflow: hidden;
             background: radial-gradient(circle at center, #ffe6f2 0%, #e6f7ff 60%, #b3e0ff 100%);
@@ -18,43 +18,35 @@
         #ui-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
             pointer-events: none; display: flex; flex-direction: column; justify-content: space-between;
-            padding: 15px; box-sizing: border-box; /* 稍微减小边距适配手机 */
+            padding: 10px; box-sizing: border-box;
         }
         .pointer-events-auto { pointer-events: auto; }
 
-        /* --- 面板通用样式 (新增折叠逻辑) --- */
+        /* --- 面板通用样式 (折叠逻辑) --- */
         .panel-container {
             background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(10px);
             border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.6);
             box-shadow: 0 4px 15px rgba(176, 224, 255, 0.3);
-            transition: all 0.3s ease;
-            overflow: hidden; /* 关键：隐藏折叠的内容 */
+            transition: all 0.3s ease; overflow: hidden; margin-bottom: 10px;
         }
         
         .panel-header {
-            padding: 10px 15px;
-            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 15px; display: flex; justify-content: space-between; align-items: center;
             cursor: pointer; background: rgba(255,255,255,0.2);
         }
         .panel-header h3 { margin: 0; font-size: 14px; color: #ff6b95; font-weight: bold; }
         .toggle-btn { font-size: 12px; color: #4a5d7e; font-weight: bold; }
 
         .panel-content {
-            padding: 15px; padding-top: 5px;
-            transition: max-height 0.3s ease, opacity 0.3s ease;
-            max-height: 500px; /* 展开时的最大高度 */
-            opacity: 1;
+            padding: 15px; padding-top: 5px; transition: max-height 0.3s ease, opacity 0.3s ease;
+            max-height: 500px; opacity: 1;
         }
-        
         /* 折叠状态 */
-        .minimized .panel-content {
-            max-height: 0; opacity: 0; padding: 0 15px; /* 隐藏内容 */
-        }
+        .minimized .panel-content { max-height: 0; opacity: 0; padding: 0 15px; }
 
         /* 左上角面板 */
-        .control-panel { max-width: 250px; max-height: 80vh; overflow-y: auto; }
-        /* 针对手机优化：面板太高时自身也可以滚动 */
-        .panel-content.scrollable { overflow-y: auto; max-height: 60vh; }
+        .control-panel { max-width: 250px; width: 100%; }
+        .panel-content.scrollable { overflow-y: auto; max-height: 50vh; }
 
         button, input[type="file"]::file-selector-button {
             background: linear-gradient(135deg, #ffc0cb 0%, #87ceeb 100%);
@@ -77,18 +69,16 @@
         .track-item.active { color: #ff6b95; font-weight: bold; background: rgba(255, 255, 255, 0.8); border-radius: 4px; }
 
         /* 右下角面板 */
-        .ai-panel { align-self: flex-end; display: flex; flex-direction: column; align-items: flex-end; }
-        
+        .ai-panel { align-self: flex-end; display: flex; flex-direction: column; align-items: flex-end; width: 200px; }
         .camera-box { 
-            position: relative; width: 120px; height: 90px; background: #000; 
+            position: relative; width: 100%; height: 120px; background: #000; 
             border-radius: 8px; overflow: hidden; border: 2px solid #fff; margin-top: 5px;
         }
         #webcam, #output_canvas { position: absolute; width: 100%; height: 100%; left: 0; top: 0; transform: scaleX(-1); }
-        
         .guide-item { margin: 2px 0; display: flex; align-items: center; justify-content: flex-end; gap: 5px; font-size: 11px;}
         .icon { font-size: 14px; }
 
-        /* Loading & UI */
+        /* Loading */
         #loading-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #fff0f5, #e0f7fa);
             z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 1s;
@@ -96,6 +86,7 @@
         .loader { border: 5px solid #f3f3f3; border-top: 5px solid #ff6b95; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+        /* Countdown */
         #countdown-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100;
             display: none; pointer-events: auto; flex-direction: column; align-items: center; justify-content: center;
@@ -104,7 +95,6 @@
         .countdown-title { font-size: 20px; color: #87CEEB; letter-spacing: 2px; margin-bottom: 20px; text-shadow: 0 0 10px rgba(135, 206, 235, 0.5); }
         .countdown-number { font-size: 80px; font-weight: bold; color: #87CEEB; text-shadow: 0 0 20px rgba(135, 206, 235, 0.8); }
         @media (min-width: 600px) { .countdown-number { font-size: 120px; } .countdown-title { font-size: 24px; } }
-        
         .pulse { animation: pulse-anim 1s infinite; }
         @keyframes pulse-anim { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
         #skip-countdown-btn {
@@ -148,18 +138,14 @@
                 <h3>✨ 记忆与音乐</h3>
                 <span class="toggle-btn">▼</span>
             </div>
-            
             <div class="panel-content scrollable">
                 <button onclick="document.getElementById('img-input').click()">📸 上传照片上墙</button>
                 <input type="file" id="img-input" accept="image/*" multiple>
-                
                 <div style="height:5px;"></div>
                 <button onclick="document.getElementById('bgm-input').click()">📂 添加歌曲</button>
                 <input type="file" id="bgm-input" accept="audio/*" multiple>
-                
                 <div id="playlist-container" class="playlist-box" style="display:none;"></div>
                 <button id="play-pause-btn">▶ 播放 / 暂停</button>
-                
                 <div style="margin-top:8px; border-top: 1px solid rgba(255,255,255,0.5); padding-top:5px;">
                     <button id="fullscreen-btn">⛶ 全屏</button>
                     <button id="clear-db-btn" class="clear-data-btn">🗑️ 清空缓存</button>
@@ -172,13 +158,11 @@
                 <h3 style="margin-left:auto;">AI 魔法</h3>
                 <span class="toggle-btn" style="margin-left: 10px;">▼</span>
             </div>
-
             <div class="panel-content">
                 <div class="guide-item">聚合 (爱心) <span class="icon">✊</span></div>
                 <div class="guide-item">变身 (萌宠) <span class="icon">🖐</span></div>
                 <div class="guide-item">缩放 (Zoom) <span class="icon">👌</span></div>
                 <div class="guide-item">点击照片 <span class="icon">🖱️</span></div>
-                
                 <div class="camera-box">
                     <video id="webcam" autoplay playsinline></video>
                     <canvas id="output_canvas"></canvas>
@@ -199,19 +183,15 @@
         import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
         import TWEEN from '@tweenjs/tween.js';
 
-        // --- 全局：面板折叠功能 ---
+        // --- 全局工具函数 ---
         window.togglePanel = function(id) {
             const panel = document.getElementById(id);
             const btn = panel.querySelector('.toggle-btn');
             panel.classList.toggle('minimized');
-            if (panel.classList.contains('minimized')) {
-                btn.innerText = '▲'; // 折叠时显示向上箭头
-            } else {
-                btn.innerText = '▼'; // 展开时显示向下箭头
-            }
+            btn.innerText = panel.classList.contains('minimized') ? '▲' : '▼';
         };
 
-        // --- SHARED ASSETS ---
+        // --- SHARED ASSETS (分享配置区) ---
         const SHARED_ASSETS = {
             images: [
                    '1 (2).jpg', 
@@ -334,9 +314,7 @@
         }
 
         function onMouseClick(event) {
-            // 如果点击的是面板头部，忽略 (已被toggle处理)
             if (event.target.closest('.panel-header') || event.target.closest('button') || event.target.closest('.control-panel .panel-content')) return;
-
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
             raycaster.setFromCamera(mouse, camera);
@@ -361,8 +339,8 @@
             const dummy = new THREE.Object3D(); dummy.position.copy(targetPos); dummy.lookAt(camera.position);
             new TWEEN.Tween(pm.mesh.quaternion).to(dummy.quaternion, 1000).easing(TWEEN.Easing.Exponential.Out).start();
             new TWEEN.Tween(pm.mesh.scale).to({x: 3, y: 3, z: 3}, 1000).start();
-
-            // 隐藏所有UI
+            
+            // 隐藏 UI
             document.querySelectorAll('.panel-container').forEach(el => el.style.opacity = '0');
         }
 
@@ -514,6 +492,7 @@
         }
 
         function setupUI() {
+            // 变量声明在最前
             const imgInput = document.getElementById('img-input'), bgmInput = document.getElementById('bgm-input');
             const audioPlayer = document.getElementById('bgm-player'), playlistContainer = document.getElementById('playlist-container');
             const playPauseBtn = document.getElementById('play-pause-btn');
@@ -591,6 +570,50 @@
             camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight); composer.setSize(window.innerWidth, window.innerHeight);
         }
+
+        // --- 修复: 补全之前遗漏的 MediaPipe AI 函数 ---
+        let vision, handLandmarker;
+        async function setupMediaPipe() {
+            try {
+                vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
+                handLandmarker = await HandLandmarker.createFromOptions(vision, {
+                    baseOptions: { modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`, delegate: "GPU" },
+                    runningMode: "VIDEO", numHands: 1
+                });
+                startWebcam();
+            } catch (e) { console.warn("AI Fail", e); document.querySelector('.guide-box').innerHTML += "<div style='color:red'>AI服务失败</div>"; }
+        }
+        function startWebcam() {
+            const video = document.getElementById("webcam"), canvas = document.getElementById("output_canvas"), canvasCtx = canvas.getContext("2d");
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+            navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => { video.srcObject = stream; video.addEventListener("loadeddata", predictWebcam); });
+            let lastVideoTime = -1;
+            function predictWebcam() {
+                if(video.videoWidth) { canvas.width = video.videoWidth; canvas.height = video.videoHeight; }
+                let startTimeMs = performance.now();
+                if (lastVideoTime !== video.currentTime && handLandmarker) {
+                    lastVideoTime = video.currentTime;
+                    const results = handLandmarker.detectForVideo(video, startTimeMs);
+                    canvasCtx.save(); canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+                    if (results.landmarks && results.landmarks.length > 0) {
+                        STATE.handDetected = true; drawHand(canvasCtx, results.landmarks[0]); analyzeGesture(results.landmarks[0]);
+                    } else STATE.handDetected = false;
+                    canvasCtx.restore();
+                }
+                window.requestAnimationFrame(predictWebcam);
+            }
+        }
+        function drawHand(ctx, lm) { ctx.fillStyle = "#ff6b95"; ctx.strokeStyle = "#87ceeb"; ctx.lineWidth = 2; lm.forEach(p => { ctx.beginPath(); ctx.arc(p.x * ctx.canvas.width, p.y * ctx.canvas.height, 3, 0, 2 * Math.PI); ctx.fill(); }); }
+        function analyzeGesture(lm) {
+            const wrist = lm[0], thumb = lm[4], index = lm[8];
+            const pinchDist = Math.hypot(thumb.x - index.x, thumb.y - index.y);
+            if (pinchDist < 0.05) { handleZoom(true); return; } else handleZoom(false);
+            const tips = [lm[8], lm[12], lm[16], lm[20]];
+            let avgDist = 0; tips.forEach(tip => avgDist += Math.hypot(tip.x - wrist.x, tip.y - wrist.y)); avgDist /= 4;
+            if (avgDist < 0.25) switchState('tree'); else if (avgDist > 0.4) switchState('scatter');
+            if (STATE.mode === 'scatter') { if (wrist.x < 0.4) STATE.rotationSpeed = -0.01; else if (wrist.x > 0.6) STATE.rotationSpeed = 0.01; else STATE.rotationSpeed = 0; }
+        }
+
         init();
     </script>
 </body>
