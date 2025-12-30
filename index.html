@@ -196,9 +196,25 @@
         <button id="start-btn" style="display:none; font-size: 18px; padding: 10px 30px; margin-top: 20px;">开启盛典</button>
     </div>
 
-    <div id="countdown-overlay">
+<div id="countdown-overlay">
         <div class="countdown-title" id="cd-title">新年倒计时 Loading...</div>
         <div class="countdown-number" id="cd-number">--</div>
+        
+        <button id="skip-countdown-btn" style="
+            margin-top: 30px;
+            background: transparent;
+            border: 1px solid #87CEEB;
+            color: #87CEEB;
+            padding: 8px 24px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            pointer-events: auto; /* 关键：因为父容器穿透鼠标，这里必须开启 */
+            transition: all 0.3s;
+        " onmouseover="this.style.background='#87CEEB'; this.style.color='#fff'" 
+          onmouseout="this.style.background='transparent'; this.style.color='#87CEEB'">
+            🚀 立即开始
+        </button>
     </div>
 
     <div id="ui-layer">
