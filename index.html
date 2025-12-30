@@ -342,7 +342,6 @@
             startBtn.addEventListener('click', startIntro);
         }
 
-        // --- UI 倒计时逻辑 (修正版) ---
         function startIntro() {
             const screen = document.getElementById('loading-screen');
             screen.style.opacity = 0;
@@ -357,29 +356,53 @@
             const number = document.getElementById('cd-number');
             overlay.style.display = 'block';
 
-            // 模拟 10秒 倒计时 (演示用)
-            // 如果要用真实时间，请将下方 demoSeconds 逻辑替换为真实时间差
-            let demoSeconds = 10; 
+            // --- 关键时间配置 ---
+            // 目标时刻：2026年1月1日 00:00:00
+            const TARGET_DATE = new Date("2026-01-01T00:00:00").getTime();
             
+            // 触发倒数的时刻：目标时刻前 60 秒
+            const START_SHOWING_NUMBERS = TARGET_DATE - (60 * 1000); 
+
             const checkTimer = setInterval(() => {
-                if (demoSeconds > 0) {
-                    title.innerText = "即将迈入 2026";
-                    number.innerText = demoSeconds;
-                    number.classList.add('pulse');
-                    demoSeconds--;
-                } else {
-                    // 结束
+                const nowTimeObj = new Date();
+                const now = nowTimeObj.getTime();
+                const distance = TARGET_DATE - now;
+
+                // 1. 如果时间到了 (Happy New Year!)
+                if (distance <= 0) {
                     clearInterval(checkTimer);
                     number.innerText = "2026";
+                    number.style.fontSize = "120px";
+                    number.classList.add('pulse');
+                    title.innerText = "新年快乐 Happy New Year";
                     
-                    // 停留1秒展示2026，然后进入场景
+                    // 停留 2 秒展示 2026，然后进入 3D 场景
                     setTimeout(() => {
                         overlay.style.opacity = 0;
                         setTimeout(() => {
                              overlay.style.display = 'none';
                              initMainScene(); 
                         }, 1000);
-                    }, 1000);
+                    }, 2000);
+                } 
+                // 2. 如果已经进入最后一分钟 (显示倒数秒数)
+                else if (now >= START_SHOWING_NUMBERS) {
+                    title.innerText = "即将迈入 2026";
+                    const secondsLeft = Math.floor(distance / 1000);
+                    number.innerText = secondsLeft;
+                    number.classList.add('pulse'); // 加上心跳特效
+                    number.style.fontSize = "150px"; // 倒计时数字大一点
+                } 
+                // 3. 如果还在等待期 (显示当前真实时间)
+                else {
+                    title.innerText = "新年倒计时 Loading...";
+                    
+                    // 获取 HH:MM:SS 格式的时间
+                    const timeStr = nowTimeObj.toTimeString().split(' ')[0];
+                    
+                    number.innerText = timeStr; 
+                    number.classList.remove('pulse'); // 时钟不需要心跳
+                    number.style.fontSize = "60px";   // 时间字符串比较长，字体改小一点防止换行
                 }
             }, 1000);
         }
