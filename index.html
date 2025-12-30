@@ -22,7 +22,7 @@
         }
         .pointer-events-auto { pointer-events: auto; }
 
-        /* --- 面板通用样式 (折叠逻辑) --- */
+        /* --- 面板通用样式 (核心折叠逻辑) --- */
         .panel-container {
             background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(10px);
             border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.6);
@@ -35,21 +35,19 @@
             cursor: pointer; background: rgba(255,255,255,0.2);
         }
         .panel-header h3 { margin: 0; font-size: 14px; color: #ff6b95; font-weight: bold; }
-        .toggle-btn { font-size: 12px; color: #4a5d7e; font-weight: bold; }
+        .toggle-btn { font-size: 12px; color: #4a5d7e; font-weight: bold; transition: transform 0.3s; }
 
         .panel-content {
-            padding: 15px; padding-top: 5px; transition: max-height 0.3s ease, opacity 0.3s ease;
+            padding: 15px; padding-top: 5px; 
+            transition: max-height 0.3s cubic-bezier(0, 1, 0, 1), opacity 0.3s ease, padding 0.3s ease;
             max-height: 500px; opacity: 1;
         }
-        /* 折叠状态 */
+
+        /* 修复：使用 !important 强制覆盖 scrollable 的高度设置 */
         .minimized .panel-content { 
-            max-height: 0 !important;       /* 强制高度归零 */
-            opacity: 0 !important;          /* 强制内容透明 */
-            padding-top: 0 !important;      /* 强制去掉上边距 */
-            padding-bottom: 0 !important;   /* 强制去掉下边距 */
-            margin: 0 !important;           /* 确保没有外边距 */
-            pointer-events: none;           /* 禁止点击隐藏的按钮 */
+            max-height: 0 !important; opacity: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important; margin: 0 !important; pointer-events: none;
         }
+
         /* 左上角面板 */
         .control-panel { max-width: 250px; width: 100%; }
         .panel-content.scrollable { overflow-y: auto; max-height: 50vh; }
@@ -261,8 +259,12 @@
             });
         }
 
-        // --- Config ---
-        const CONFIG = { count: 1500, colors: [0xffc0cb, 0x87ceeb, 0xff69b4, 0x98fb98], bloomStrength: 0.6, bloomRadius: 0.4, bloomThreshold: 0.4 };
+        // --- Config (修改点：增加数量) ---
+        const CONFIG = { 
+            count: 3500, // 大幅增加粒子数量 (原1500)
+            colors: [0xffc0cb, 0x87ceeb, 0xff69b4, 0x98fb98], 
+            bloomStrength: 0.6, bloomRadius: 0.4, bloomThreshold: 0.4 
+        };
         const STATE = { mode: 'intro', isZoomed: false, handDetected: false, rotationSpeed: 0.001, focusedPhoto: null };
 
         let scene, camera, renderer, composer, controls;
@@ -391,15 +393,27 @@
             }, 1000);
         }
 
+        // --- Main Scene (修改点：细腻颗粒感) ---
         function initMainScene() {
             STATE.mode = 'tree';
-            const geos = [ new THREE.SphereGeometry(0.4,16,16), new THREE.IcosahedronGeometry(0.35,1), new THREE.SphereGeometry(0.25,12,12), new THREE.IcosahedronGeometry(0.3,2) ];
-            const mats = [
-                new THREE.MeshStandardMaterial({color:CONFIG.colors[0], roughness:0.6, metalness:0.1, emissive:CONFIG.colors[0], emissiveIntensity:0.3}),
-                new THREE.MeshStandardMaterial({color:CONFIG.colors[1], roughness:0.5, metalness:0.2, emissive:CONFIG.colors[1], emissiveIntensity:0.3}),
-                new THREE.MeshPhysicalMaterial({color:CONFIG.colors[2], transmission:0.5, opacity:0.9, roughness:0.2, ior:1.4, emissive:CONFIG.colors[2], emissiveIntensity:0.2}),
-                new THREE.MeshStandardMaterial({color:CONFIG.colors[3], roughness:0.6, metalness:0.1, emissive:CONFIG.colors[3], emissiveIntensity:0.3})
+            
+            // 修改：使用更小的几何体，降低面数以提升性能
+            const geos = [
+                new THREE.SphereGeometry(0.12, 8, 8),  // 半径减小，面数减少
+                new THREE.IcosahedronGeometry(0.1, 0), // 半径减小，细节设为0
+                new THREE.SphereGeometry(0.08, 6, 6),  // 更小的微粒
+                new THREE.IcosahedronGeometry(0.12, 0) 
             ];
+
+            // 修改：使用高粗糙度材质，模拟沙砾/糖霜质感
+            const mats = [
+                new THREE.MeshStandardMaterial({ color: CONFIG.colors[0], roughness: 0.9, metalness: 0.0, emissive: CONFIG.colors[0], emissiveIntensity: 0.2 }),
+                new THREE.MeshStandardMaterial({ color: CONFIG.colors[1], roughness: 0.85, metalness: 0.1, emissive: CONFIG.colors[1], emissiveIntensity: 0.2 }),
+                // 稍微保留一点透光材质，增加层次感
+                new THREE.MeshPhysicalMaterial({ color: CONFIG.colors[2], transmission: 0.3, opacity: 0.95, roughness: 0.7, ior: 1.2, emissive: CONFIG.colors[2], emissiveIntensity: 0.15 }), 
+                new THREE.MeshStandardMaterial({ color: CONFIG.colors[3], roughness: 0.9, metalness: 0.0, emissive: CONFIG.colors[3], emissiveIntensity: 0.2 })
+            ];
+
             geos.forEach((geo,i) => {
                 const mesh = new THREE.InstancedMesh(geo, mats[i], CONFIG.count/4);
                 mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); scene.add(mesh); instancedMeshes.push(mesh);
@@ -408,7 +422,9 @@
             function getHeartPos(i, total) {
                 const t = Math.random()*Math.PI*2; const s = Math.cbrt(Math.random()); 
                 const hx = 16*Math.pow(Math.sin(t),3); const hy = 13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t);
-                return new THREE.Vector3(hx*0.8*s, hy*0.8*s+5, (Math.random()-0.5)*8*s); 
+                // 修改：增加内部填充，让爱心更实心
+                const internalFill = Math.pow(Math.random(), 0.5); 
+                return new THREE.Vector3(hx*0.8*s*internalFill, (hy*0.8*s*internalFill)+5, (Math.random()-0.5)*10*s*internalFill); 
             }
             function getRabbitPos(i, total) {
                 const rand = Math.random(); let pos = new THREE.Vector3();
@@ -444,9 +460,9 @@
             }
 
             const pGeo=new THREE.BufferGeometry(), pPos=[];
-            for(let k=0; k<800; k++) pPos.push((Math.random()-0.5)*60, (Math.random()-0.5)*60, (Math.random()-0.5)*60);
+            for(let k=0; k<1000; k++) pPos.push((Math.random()-0.5)*60, (Math.random()-0.5)*60, (Math.random()-0.5)*60);
             pGeo.setAttribute('position', new THREE.Float32BufferAttribute(pPos, 3));
-            goldParticles = new THREE.Points(pGeo, new THREE.PointsMaterial({color:0xffd700, size:0.2, transparent:true, opacity:0.6}));
+            goldParticles = new THREE.Points(pGeo, new THREE.PointsMaterial({color:0xffd700, size:0.15, transparent:true, opacity:0.5}));
             scene.add(goldParticles);
         }
 
@@ -558,6 +574,7 @@
             textureLoader.load(imgUrl, (tex) => {
                 const aspect = tex.image.width / tex.image.height; const width = 4; const height = width / aspect;
                 const geo = new THREE.PlaneGeometry(width, height);
+                // 修改：使用 Standard 材质，避免过曝，增加质感
                 const mat = new THREE.MeshStandardMaterial({ map: tex, side: THREE.DoubleSide, roughness: 0.8, metalness: 0.1 });
                 const mesh = new THREE.Mesh(geo, mat);
                 const border = new THREE.Mesh(new THREE.PlaneGeometry(width + 0.2, height + 0.2), new THREE.MeshBasicMaterial({ color: 0xffc0cb }));
