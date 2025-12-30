@@ -5,6 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>2026 Dream Splendor - 萌趣盛典</title>
     <style>
+/* --- 新增：倒计时 UI 样式 --- */
+        #countdown-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 50;
+            display: none; /* 默认隐藏，由 JS 控制 */
+            pointer-events: none;
+        }
+
+        .countdown-title {
+            font-size: 24px;
+            color: #87CEEB; /* 粉蓝色 */
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(135, 206, 235, 0.5);
+            font-weight: 300;
+        }
+
+        .countdown-number {
+            font-size: 120px;
+            font-weight: bold;
+            font-family: 'Segoe UI', sans-serif; /* 规范字体 */
+            color: #87CEEB; /* 粉蓝色 */
+            text-shadow: 0 0 20px rgba(135, 206, 235, 0.8), 0 0 40px rgba(255, 192, 203, 0.4);
+            transition: all 0.2s;
+        }
+
+        /* 脉冲动画 */
+        .pulse {
+            animation: pulse-anim 1s infinite;
+        }
+        @keyframes pulse-anim {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
         /* CSS 样式：梦幻风格与 UI 布局 */
         body {
             margin: 0;
@@ -150,6 +189,11 @@
     </script>
 </head>
 <body>
+
+    <div id="countdown-overlay">
+        <div class="countdown-title" id="cd-title">新年倒计时 Loading...</div>
+        <div class="countdown-number" id="cd-number">--</div>
+    </div>
 
     <div id="loading-screen">
         <div class="loader"></div>
@@ -372,17 +416,77 @@
         }
 
         function startIntro() {
+// --- 修改后：UI 倒计时逻辑 ---
+        
+        // 目标时间：2026年1月1日 00:00:00
+        const TARGET_DATE = new Date("2026-01-01T00:00:00").getTime();
+        // 触发倒计时的开始时间：2025年12月31日 23:59:00
+        const START_COUNTDOWN_DATE = new Date("2025-12-31T23:59:00").getTime();
+
+        function startIntro() {
+            // 1. 移除加载屏
             const screen = document.getElementById('loading-screen');
             screen.style.opacity = 0;
             setTimeout(() => screen.remove(), 1000);
 
+            // 2. 播放音乐
             const audio = document.getElementById('bgm-player');
             if (audio.src) audio.play().catch(e => console.log("Audio needs interaction"));
 
-            if (!font) {
-                initMainScene();
-                return;
-            }
+            // 3. 显示 UI 层
+            const overlay = document.getElementById('countdown-overlay');
+            const title = document.getElementById('cd-title');
+            const number = document.getElementById('cd-number');
+            overlay.style.display = 'block';
+
+            // 4. 时间检查循环
+            const checkTimer = setInterval(() => {
+                const now = new Date().getTime();
+                
+                // --- 逻辑分支 ---
+                
+                // 情况 A: 还没到 23:59 (等待中)
+                // *为了让你现在能看到效果，我在逻辑里加了 '|| true' 来强制演示倒计时*
+                // *正式发布时，请去掉 '|| true'*
+                if (now < START_COUNTDOWN_DATE && false) { 
+                    title.innerText = "新年倒计时 Loading...";
+                    number.innerText = "Wait";
+                    number.style.fontSize = "40px";
+                } 
+                // 情况 B: 已经进入最后一分钟 (开始倒计时!)
+                else {
+                    title.innerText = "即将迈入 2026";
+                    number.style.fontSize = "120px";
+                    number.classList.add('pulse'); // 添加心跳特效
+                    
+                    // 计算剩余秒数
+                    // 正常逻辑是: Math.ceil((TARGET_DATE - now) / 1000);
+                    // 但为了演示，我们强制设定一个 10 秒倒计时
+                    // 如果你想用真实时间，请取消下面注释，注释掉 demo 逻辑
+                    
+                    /* 真实时间逻辑: */
+                    /*
+                    let distance = TARGET_DATE - now;
+                    let seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                    */
+
+                    /* 演示逻辑 (从10倒数): */
+                    if (!window.demoSeconds) window.demoSeconds = 10;
+                    let seconds = window.demoSeconds;
+                    window.demoSeconds--;
+
+                    // 更新数字
+                    number.innerText = seconds;
+
+                    // 倒计时结束
+                    if (seconds < 0) {
+                        clearInterval(checkTimer);
+                        overlay.style.display = 'none'; // 隐藏 UI
+                        initMainScene(); // 进入 3D 主场景
+                    }
+                }
+            }, 1000);
+        }
 
             const sequence = ["5", "4", "3", "2", "1", "2026"];
             let step = 0;
@@ -392,7 +496,6 @@
                     finishIntro();
                     return;
                 }
-                createTextParticles(sequence[step]);
                 step++;
                 setTimeout(nextStep, 1000); 
             }
